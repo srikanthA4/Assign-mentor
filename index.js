@@ -5,7 +5,7 @@ const mongoClient = mongodb.MongoClient;
 const objectId = mongodb.ObjectID;
 const app = express();
 
-const dbUrl = "mongodb://127.0.0.1:27017";
+//const dbUrl = "mongodb://127.0.0.1:27017";
 const dbUrl ="mongodb+srv://task_db:D2OW3FBnawvkk6QJ@taskone.2hsbk.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 
 const DB_URL=process.env.DB_URL ;
