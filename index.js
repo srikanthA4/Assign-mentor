@@ -1,145 +1,122 @@
-
-import express, { request, response } from "express";
-import dotenv from "dotenv";
-import {MongoClient} from "mongodb";
-
-
-dotenv.config();
+const express = require("express");
+const mongodb = require("mongodb");
+require("dotenv").config;
+const mongoClient = mongodb.MongoClient;
+const objectId = mongodb.ObjectID;
 const app = express();
-const PORT = process.env.PORT;
+
+//const dbUrl = "mongodb://127.0.0.1:27017";
+//const dbUrl ="mongodb+srv://task_db:D2OW3FBnawvkk6QJ@taskone.2hsbk.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+
+const DB_URL=process.env.DB_URL ;
+const port=process.env.PORT;
 app.use(express.json());
 
-const MONGO_URL= "mongodb+srv://sandeep:123456qw@cluster0.4bf2f.mongodb.net/assign-mentor";
+/** mentor*/
+
+app.get("/all", async (req, res) => {
+  try {
+    let clientInfo = await mongoClient.connect(DB_URL);
+    let db = clientInfo.db("data");
+    let data = await db.collection("mentor").find().toArray();
+    res.status(200).json(data);
+    clientInfo.close();
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+// get all student
+
+app.get("/all_student", async (req, res) => {
+  try {
+    let clientInfo = await mongoClient.connect(DB_URL);
+    let db = clientInfo.db("data_student");
+    let data = await db.collection("student").find().toArray();
+    res.status(200).json(data);
+    clientInfo.close();
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+//create student
+
+app.post("/create_mentor", async (req,res) => {
+  try{
+    let student=await mongoClient.connect(DB_URL);
+    let db=mentor.db("data_student");
+    console.log(req.body)
+    const newStudent={
+      "id":req.body.id,
+      "name":req.body.name,
+      "mail":req.body.mail,
+      "student":req.body.student
+    }
+  await db.collection("student").insertOne(newStudent);
+    res.status(200).json({message:"mentor Created"});
+    mentor.close();
+  } catch(err)
+  {
+    console.log(err)
+  }
+})
+
+/** create mentor */
+app.post("/create_mentor", async (req,res) => {
+  try{
+    let mentor=await mongoClient.connect(DB_URL);
+    let db=mentor.db("data");
+    console.log(req.body)
+    const newMentor={
+      "id":req.body.id,
+      "name":req.body.name,
+      "mail":req.body.mail,
+      "student":req.body.student
+    }
+  await db.collection("mentor").insertOne(newMentor);
+    res.status(200).json({message:"mentor Created"});
+    mentor.close();
+  } catch(err)
+  {
+    console.log(err)
+  }
+})
+
+/** get particular mentor */
+
+app.get("/mentor/:id",async(req,res) => {
+  try{
+  let client= await mongoClient.connect(DB_URL);
+  let db=client.db("data");
+   await db.collection("mentor").findOne({_id:objectId(req.params.id)});
+  console.log(data)
+  res.send(data)
+  }catch(err){
+    console.log(err)
+  }
+})
+
+/** assingn student */
+app.put('/assign_student/:id', async(req, res)=>{
+  try{
+    let client=await mongoClient.connect(DB_URL);
+    let db=client.db("database");
+    await db.collection("mentor").findOneAndUpdate({_id:objectId(req.params.id)},{$set:req.body})
+    
+    res.status(200).json({message:"student assigned"})
+   
 
 
 
-async function createConnection(){
-     const client = new MongoClient(MONGO_URL);
-     await client.connect();
-    console.log("sucessfully connected");
-    return client;  
-}
-
-
-
-
-
-
-// Method to display all the endpoints available.
-app.get("/", (request, response) => {
-    const data = ` Available endpoints are 
-     [ /students --- to get all students ]
-     [ /mentors --- to get all mentors ]
-     [ /create-student --- to add a new user to the database ]
-     [ /create-mentor --- to add a new mentor to the database ]
-     [ /assign-student-to-mentor/:id --- to assign students to a particular mentor ]
-     [ /all-students-under-mentor/:id --- display all the students under particular mentor ]
-     [ /assign-mentor-to-student/:id --- to assign/update mentor to a particular student ]
-    `
-    response.send(data)
+  }catch(err){console.log(err)}
 })
 
 
-//Method to display all the students available.
-app.get("/students", async (request, response) => {
-    const client = await createConnection();
-   const result = await client.db("assign-mentor").collection("students").find({}).toArray();
-    response.send(result)
-})
 
 
-//Method to display all the mentors available.
 
 
-app.get('/mentors',async(request,response) =>{
-    const client = await createConnection();
 
-    const result = await client.db("assign-mentor").
-       collection("mentors").
-       find({})
-       .toArray();
-       console.log(result);
-       response.send(result);
+app.listen(port,() =>console.log("app runs with" ,port));
 
-})
-
-// Method to add a new student to the students collection
-
-app.post('/create-student',async(request,response)=>{
-    const client = await createConnection();
-    const data = request.body
-
-    const result = await client.db("assign-mentor").
-    collection("students")
-    .insertOne(data)
-})
-
-
-// Method to add a new mentor to the mentors collection
-app.post("/create-mentor", async (request, response) => {
-    const client = await createConnection();
-
-    const data = request.body
-    const result = await client.db("assign-mentor").collection("mentors").insertOne(data)
-    response.send(result)
-})
-
-// Method to assign students to the given mentor.
-app.put("/assign-student-to-mentor/:id", async (request, response) => {
-    const { id } = request.params
-    const data = request.body
-    const client = await createConnection();
-    const mentor = await client.db("assign-mentor").collection("mentors").findOne({ mentor_id: id })
-    let students_under_mentor = mentor.students
-    console.log(students_under_mentor);
-    const all_students = await client.db("assign-mentor").collection("students").find({}).toArray()
-    console.log(all_students);
-    all_students.forEach(async (x) => {
-
-        if (students_under_mentor.includes(+x.student_id) && !x.mentor) {
-            await client.db("assign-mentor").collection("mentors").updateOne({ mentor_id: id }, { $set: data })
-            await client.db("assign-mentor").collection("students").updateOne({ student_id: x.student_id }, { $set: { "mentor": id } })
-            console.log(x.name, "is assigned to", mentor.name)
-        } else if (students_under_mentor.includes(+x.student_id) && !!x.mentor) {
-            console.log(x.name, "is already assigned to mentor")
-        }
-    })
-    response.send(mentor)
-})
-
-
-// Method to Update or Assign mentor to the given student.
-app.put("/assign-mentor-to-student/:id", async (request, response) => {
-    const { id } = request.params
-    const data = request.body
-    const client = await createConnection();
-
-    const result = await client.db("assign-mentor").collection("students").updateOne({ student_id: id }, { $set: data })
-    console.log(result)
-    const student = await client.db("assign-mentor").collection("students").findOne({ student_id: id })
-    console.log(student)
-    response.send(student.name + " is assigned to given mentor")
-})
- 
-// Displays all the students under the given mentor
-app.get("/all-students-under-mentor/:id", async (request, response) => {
-    const { id } = request.params
-    const client = await createConnection();
-
-    const mentor = await client.db("assign-mentor").collection("mentors").findOne({ mentor_id: id });
-    const all_students = await client.db("assign-mentor").collection("students").find({}).toArray();
-
-    let students_under_mentor =   mentor.students;
-
-
-    let result = []
-    all_students.forEach((x) => {
-        if (students_under_mentor.includes(+x.student_id)) {
-            result.push(x.name)
-        }
-    })
-    response.send(result)
-})
-
-
-app.listen(PORT, () => console.log("App started in ", PORT))
